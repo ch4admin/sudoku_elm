@@ -1,0 +1,26 @@
+# elm-package generated files
+elm-stuff
+# elm-repl generated files
+repl-temp-*
+
+.idea
+*.iml
+*.ipr
+.gradle
+
+build/
+out/
+gen/
+dist/
+
+# IDEs and editors (shamelessly copied from @angular/cli's .gitignore)
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+
+node_modules

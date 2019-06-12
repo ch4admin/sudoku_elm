@@ -1,0 +1,87 @@
+.skuBoard {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-direction: column;
+        flex-direction: column;
+    -ms-flex-wrap: wrap;
+        flex-wrap: wrap;
+    width: 400px;
+    height: 400px;
+    cursor: default !important;
+    border: 0.3vmin solid #673ab7;
+}
+
+
+.skuBoardRow {
+    max-width: 100%;
+    height: 100%;
+    -ms-flex: 1 1 0%;
+    flex: 1 1 0%;
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+}
+
+
+.skuBox {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    border: .1vmin solid #673ab7;
+    width: 100%;
+    background-color: #fff;
+}
+
+.skuBoxRow {
+    -ms-flex: 1 1 0%;
+    flex: 1 1 0%;
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+}
+
+.skuCell {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -ms-flex: 1 1 0%;
+    flex: 1 1 0%;
+    border: .1vmin solid #6435c9;
+    font-size: 30px;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    font-weight: lighter;
+    width: 100%;
+    height: 100%;
+    -ms-flex-pack: center;
+    justify-content: center;
+    text-align: center;
+    -webkit-transition: background-color .2s ease-in;
+    -o-transition: background-color .2s ease-in;
+    transition: background-color .2s ease-in;
+}
+
+/* https://seppuku.surge.sh/easy/ByppAsc0E */
+
+.solvedColor {
+    color: green;
+}
+
+.possiblesSize {
+    font-size: 10px;
+    line-height: 1em;
+}

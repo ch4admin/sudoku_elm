@@ -1,0 +1,1 @@
+elm make src/Main.elm --output public/elm.js && http-server -p 8000 -c-1 -o
