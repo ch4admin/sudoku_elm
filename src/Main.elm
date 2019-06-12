@@ -6,11 +6,11 @@ import Debug
 import Grid
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onMouseOver)
 import Puzzles exposing (Puzzle, puzzles)
 import Set
 import Solve
-import SudokuGrid exposing (Action, PossibleCell(..), PossibleGrid, SudokuGrid)
+import SudokuGrid exposing (Action, PossibleCell(..), PossibleGrid, Rationale(..), Removal, SudokuGrid)
 import Url
 
 
@@ -38,12 +38,13 @@ type alias Model =
     , solved : Bool
     , solution : Maybe PossibleGrid
     , actions : List Action
+    , hoverCell : Maybe ( Int, Int )
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model key url (List.head puzzles) puzzles False Nothing [], Cmd.none )
+    ( Model key url (List.head puzzles) puzzles False Nothing [] Nothing, Cmd.none )
 
 
 
@@ -55,6 +56,7 @@ type Msg
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
     | SolvePuzzle
+    | HoverCell Int Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -92,6 +94,9 @@ update msg model =
                     , Cmd.none
                     )
 
+        HoverCell x y ->
+            ( { model | hoverCell = Just ( x, y ) }, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -120,8 +125,8 @@ view model =
     , body =
         [ div [ class "ui container" ]
             [ div [ class "ui grid" ]
-                [ div [ class "ten wide column" ] [ sudokuBoardView (gridFromPuzzle model.puzzle) model.solution model.solved ]
-                , div [ class "six wide column" ]
+                [ div [ class "seven wide column" ] [ sudokuBoardView (gridFromPuzzle model.puzzle) model.solution model.solved model.hoverCell ]
+                , div [ class "nine wide column" ]
                     [ button [ class solveButtonClass, onClick SolvePuzzle ] [ text "Solve" ]
                     , actionView model.actions
                     ]
@@ -141,8 +146,8 @@ gridFromPuzzle puzzle =
             p.puzzle
 
 
-sudokuBoardView : SudokuGrid -> Maybe PossibleGrid -> Bool -> Html Msg
-sudokuBoardView originalGrid solutionGrid solved =
+sudokuBoardView : SudokuGrid -> Maybe PossibleGrid -> Bool -> Maybe ( Int, Int ) -> Html Msg
+sudokuBoardView originalGrid solutionGrid solved hoverCell =
     let
         boardRow i =
             div [ class "skuBoardRow" ] (List.map (\j -> box i j) (List.range 0 2))
@@ -159,7 +164,7 @@ sudokuBoardView originalGrid solutionGrid solved =
                 col m =
                     j * 3 + m
             in
-            div [ class "skuBoxRow" ] (List.map (\m -> cell row (col m) solved originalGrid solutionGrid) (List.range 0 2))
+            div [ class "skuBoxRow" ] (List.map (\m -> cell row (col m) solved originalGrid solutionGrid hoverCell) (List.range 0 2))
 
         boardRows =
             List.map boardRow (List.range 0 2)
@@ -167,47 +172,64 @@ sudokuBoardView originalGrid solutionGrid solved =
     div [ class "skuBoard" ] boardRows
 
 
-cell : Int -> Int -> Bool -> SudokuGrid -> Maybe PossibleGrid -> Html Msg
-cell row col solved originalGrid maybeSolutionGrid =
+hover : Int -> Int -> Maybe ( Int, Int ) -> Bool
+hover x y hoverCell =
+    case hoverCell of
+        Nothing ->
+            False
+
+        Just ( hx, hy ) ->
+            hx == x && hy == y
+
+
+cell : Int -> Int -> Bool -> SudokuGrid -> Maybe PossibleGrid -> Maybe ( Int, Int ) -> Html Msg
+cell row col solved originalGrid maybeSolutionGrid hoverCell =
     let
         ov =
             originalValue row col originalGrid
+
+        hoverClass =
+            if hover row col hoverCell then
+                " hoverColor"
+
+            else
+                ""
     in
     case solved of
         True ->
             case ov of
                 Just v ->
-                    div [ class "skuCell" ] [ text (String.fromInt v) ]
+                    div [ class ("skuCell" ++ hoverClass) ] [ text (String.fromInt v) ]
 
                 Nothing ->
                     case maybeSolutionGrid of
                         Nothing ->
                             -- cant have no solution if solved
-                            div [ class "skuCell" ] [ text "" ]
+                            div [ class ("skuCell" ++ hoverClass) ] [ text "" ]
 
                         Just solutionGrid ->
                             case Grid.get row col solutionGrid of
                                 Nothing ->
-                                    div [ class "skuCell" ] [ text "" ]
+                                    div [ class ("skuCell" ++ hoverClass) ] [ text "" ]
 
                                 Just (Filled v) ->
-                                    div [ class "skuCell solvedColor" ] [ text (String.fromInt v) ]
+                                    div [ class ("skuCell solvedColor" ++ hoverClass) ] [ text (String.fromInt v) ]
 
                                 Just (Possibles p) ->
                                     let
                                         str =
                                             String.join " " (List.map String.fromInt (Set.toList p.remaining))
                                     in
-                                    div [ class "skuCell possiblesSize" ] [ text str ]
+                                    div [ class ("skuCell possiblesSize" ++ hoverClass) ] [ text str ]
 
         False ->
             -- show sudoku grid before being solved
             case ov of
                 Nothing ->
-                    div [ class "skuCell" ] [ text "" ]
+                    div [ class ("skuCell" ++ hoverClass) ] [ text "" ]
 
                 Just v ->
-                    div [ class "skuCell" ] [ text (String.fromInt v) ]
+                    div [ class ("skuCell" ++ hoverClass) ] [ text (String.fromInt v) ]
 
 
 originalValue row col grid =
@@ -224,29 +246,21 @@ originalValue row col grid =
                     Just y
 
 
-cellValue : Int -> Int -> SudokuGrid -> String
-cellValue row col grid =
-    case Grid.get row col grid of
-        Nothing ->
-            ""
-
-        Just v ->
-            case v of
-                Nothing ->
-                    ""
-
-                Just y ->
-                    String.fromInt y
-
-
 actionView actions =
     let
         row action =
-            tr []
-                [ th [] [ text (String.fromInt action.x ++ ", " ++ String.fromInt action.y) ]
-                , th [] [ text (String.fromInt action.value) ]
-                , tr [] [ text "Rationale" ]
+            tr [ onMouseOver (HoverCell action.x action.y) ]
+                [ td []
+                    [ h2 [ class "ui header" ] [ text ("R" ++ String.fromInt (action.x + 1) ++ " C" ++ String.fromInt (action.y + 1)) ]
+                    ]
+                , td []
+                    [ h2 [ class "ui center aligned header solvedColor" ] [ text (String.fromInt action.value) ]
+                    ]
+                , td [] [ getLogicText action.removed action.value ]
                 ]
+
+        getLogicText removed value =
+            div [ class "ui list" ] (List.map (\r -> div [] [ text (rationaleText r value) ]) removed)
 
         rows =
             List.map row actions
@@ -255,8 +269,35 @@ actionView actions =
         [ thead []
             [ tr []
                 [ th [] [ text "Cell" ]
-                , th [] [ text "Detail" ]
+                , th [] [ text "Value" ]
+                , th [] [ text "Logic" ]
                 ]
             ]
         , tbody [] rows
         ]
+
+
+rationaleText : Removal -> Int -> String
+rationaleText removal value =
+    let
+        logicText =
+            case removal.rationale of
+                SameRow ->
+                    "Values exist in same row"
+
+                SameColumn ->
+                    "Values exist in same column"
+
+                SameBox ->
+                    "Values exist in same box"
+
+                ValueOnlyPossibleInOneCellInRow ->
+                    String.fromInt value ++ " is not possible in any other cell in this row"
+
+                ValueOnlyPossibleInOneCellInColumn ->
+                    String.fromInt value ++ " is not possible in any other cell in this column"
+
+                ValueOnlyPossibleInOneCellInBox ->
+                    String.fromInt value ++ " is not possible in any other cell in this box"
+    in
+    "Not [" ++ String.join "," (List.map String.fromInt removal.values) ++ "]: " ++ logicText

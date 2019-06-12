@@ -18,7 +18,7 @@ solutionFromPossibleGrid possibleGrid actions =
         let
             -- modify possibleGrid
             newGrid =
-                Solvers.removeSameRow possibleGrid |> Solvers.removeSameCol |> Solvers.removeSameBox
+                Solvers.removeSameRow possibleGrid |> Solvers.removeSameCol |> Solvers.removeSameBox |> Solvers.onlyPossibleValueInRow
 
             action =
                 Debug.log "Action:" (getAction Solvers.solversList newGrid)
@@ -34,7 +34,7 @@ solutionFromPossibleGrid possibleGrid actions =
                     pg =
                         updatePossibleGrid a newGrid
                 in
-                solutionFromPossibleGrid pg (actions ++ [ Debug.log "a" a ])
+                solutionFromPossibleGrid pg (actions ++ [ a ])
 
 
 

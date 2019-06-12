@@ -28,14 +28,14 @@ testSolvers =
                 Expect.equal (Solvers.actionFromCellWithOnePossible 1 1 (Possibles { remaining = Set.fromList [ 1, 2 ], removed = [] })) Nothing
         , test "getActionFromCell one" <|
             \_ ->
-                Expect.equal (Solvers.actionFromCellWithOnePossible 1 1 (Possibles { remaining = Set.fromList [ 2 ], removed = [] })) (Just (Action 1 1 2))
+                Expect.equal (Solvers.actionFromCellWithOnePossible 1 1 (Possibles { remaining = Set.fromList [ 2 ], removed = [] })) (Just (Action 1 1 2 []))
         , test "getActionFromIndexedCells" <|
             \_ ->
                 let
                     input =
                         [ ( 1, 1, Filled 7 ), ( 1, 2, Possibles { remaining = Set.fromList [ 2 ], removed = [] } ) ]
                 in
-                Expect.equal (Just (Action 1 2 2)) (Solvers.getActionFromIndexedCells input)
+                Expect.equal (Just (Action 1 2 2 [])) (Solvers.getActionFromIndexedCells input)
         , test "removeSameRow" <|
             \_ ->
                 let
@@ -87,4 +87,26 @@ testSolvers =
                             ]
                 in
                 Expect.equal expected (Solvers.removeSameBox p)
+        , test "ValueOnlyPossibleInOneCellInRow" <|
+            \_ ->
+                let
+                    init =
+                        Grid.fromList
+                            [ [ Filled 1
+                              , Possibles { remaining = Set.fromList [ 2, 3, 4, 5, 6, 7, 8, 9 ], removed = [ Removal [ 1 ] SameRow ] }
+                              , Possibles { remaining = Set.fromList [ 4, 5, 6, 7, 8, 9 ], removed = [ Removal [ 1 ] SameRow ] }
+                              , Possibles { remaining = Set.fromList [ 3, 4 ], removed = [ Removal [ 1 ] SameRow ] }
+                              ]
+                            ]
+
+                    expected =
+                        Grid.fromList
+                            [ [ Filled 1
+                              , Possibles { remaining = Set.fromList [ 2 ], removed = [ Removal [ 1 ] SameRow, Removal [ 3, 4, 5, 6, 7, 8, 9 ] ValueOnlyPossibleInOneCellInRow ] }
+                              , Possibles { remaining = Set.fromList [ 4, 5, 6, 7, 8, 9 ], removed = [ Removal [ 1 ] SameRow ] }
+                              , Possibles { remaining = Set.fromList [ 3, 4 ], removed = [ Removal [ 1 ] SameRow ] }
+                              ]
+                            ]
+                in
+                Expect.equal expected (Solvers.onlyPossibleValueInRow init)
         ]

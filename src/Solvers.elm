@@ -3,6 +3,7 @@ module Solvers exposing
     , actionFromNoPossibles
     , getActionFromIndexedCells
     , gridFromListofBoxLists
+    , onlyPossibleValueInRow
     , removeSameBox
     , removeSameCol
     , removeSameRow
@@ -10,6 +11,7 @@ module Solvers exposing
     )
 
 import Array exposing (Array)
+import Dict
 import Grid
 import Set
 import SudokuGrid exposing (Action, PossibleCell(..), PossibleGrid, Rationale(..), Removal)
@@ -65,7 +67,7 @@ actionFromCellWithOnePossible x y cell =
                         Nothing
 
                     Just v ->
-                        Just (Action x y v)
+                        Just (Action x y v p.removed)
 
             else
                 Nothing
@@ -73,14 +75,19 @@ actionFromCellWithOnePossible x y cell =
 
 removeSameRow : PossibleGrid -> PossibleGrid
 removeSameRow possibleGrid =
-    Array.fromList (List.map (\arr -> Array.fromList (processGroup SameRow (Array.toList arr))) (Array.toList possibleGrid))
+    Array.fromList (List.map (\arr -> Array.fromList (removeFilledValuesFromPossiblesForGroup SameRow (Array.toList arr))) (Array.toList possibleGrid))
+
+
+onlyPossibleValueInRow : PossibleGrid -> PossibleGrid
+onlyPossibleValueInRow possibleGrid =
+    Array.fromList (List.map (\arr -> Array.fromList (onlyPossibleValueInGroup ValueOnlyPossibleInOneCellInRow (Array.toList arr))) (Array.toList possibleGrid))
 
 
 removeSameCol : PossibleGrid -> PossibleGrid
 removeSameCol possibleGrid =
     let
         listOfColLists =
-            List.map (\arr -> processGroup SameColumn (Array.toList arr)) (Grid.toColumnsList possibleGrid)
+            List.map (\arr -> removeFilledValuesFromPossiblesForGroup SameColumn (Array.toList arr)) (Grid.toColumnsList possibleGrid)
 
         listOfRows =
             Grid.transposeList listOfColLists
@@ -100,14 +107,80 @@ removeSameBox possibleGrid =
             List.map (\b -> Grid.list b) boxes
 
         processed =
-            List.map (\l -> processGroup SameBox l) boxLists
+            List.map (\l -> removeFilledValuesFromPossiblesForGroup SameBox l) boxLists
     in
     -- reassemble into new box
     Grid.fromList (gridFromListofBoxLists processed [])
 
 
-processGroup : Rationale -> List PossibleCell -> List PossibleCell
-processGroup rationale list =
+onlyPossibleValueInGroup : Rationale -> List PossibleCell -> List PossibleCell
+onlyPossibleValueInGroup rationale list =
+    let
+        getPossibleValues c =
+            case c of
+                Possibles p ->
+                    Set.toList p.remaining
+
+                _ ->
+                    []
+
+        possibleValues =
+            List.concat (List.map getPossibleValues list)
+
+        counts =
+            frequencies possibleValues
+
+        onlyOnePossibleValueSet =
+            Set.fromList
+                (List.filterMap
+                    (\( k, v ) ->
+                        if v == 1 then
+                            Just k
+
+                        else
+                            Nothing
+                    )
+                    (Dict.toList counts)
+                )
+
+        processCell cell =
+            case cell of
+                Possibles p ->
+                    let
+                        intersection =
+                            Set.intersect onlyOnePossibleValueSet p.remaining
+                    in
+                    if Set.isEmpty intersection then
+                        Possibles p
+
+                    else
+                        let
+                            -- possible in multiple sweeps that we run the same logic twice
+                            removedValues =
+                                Set.toList (Set.diff p.remaining intersection)
+                        in
+                        Debug.log "Possibles"
+                            (Possibles
+                                { remaining = intersection
+                                , removed =
+                                    p.removed
+                                        ++ (if List.isEmpty removedValues then
+                                                []
+
+                                            else
+                                                [ Removal removedValues rationale ]
+                                           )
+                                }
+                            )
+
+                Filled v ->
+                    Filled v
+    in
+    List.map processCell list
+
+
+removeFilledValuesFromPossiblesForGroup : Rationale -> List PossibleCell -> List PossibleCell
+removeFilledValuesFromPossiblesForGroup rationale list =
     let
         filledValues =
             getFilledValues list
@@ -185,3 +258,16 @@ gridFromListofBoxLists ll output =
 splitAt : Int -> List a -> ( List a, List a )
 splitAt n xs =
     ( List.take n xs, List.drop n xs )
+
+
+frequencies : List comparable -> Dict.Dict comparable Int
+frequencies list =
+    list
+        |> List.foldl
+            (\el counter ->
+                Dict.get el counter
+                    |> Maybe.withDefault 0
+                    |> (\count -> count + 1)
+                    |> (\count -> Dict.insert el count counter)
+            )
+            Dict.empty

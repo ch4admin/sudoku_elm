@@ -57,10 +57,13 @@ type Rationale
     = SameRow
     | SameColumn
     | SameBox
+    | ValueOnlyPossibleInOneCellInRow
+    | ValueOnlyPossibleInOneCellInColumn
+    | ValueOnlyPossibleInOneCellInBox
 
 
 type alias Action =
-    { x : Int, y : Int, value : Int }
+    { x : Int, y : Int, value : Int, removed : List Removal }
 
 
 type alias PossibleGrid =

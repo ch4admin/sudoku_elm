@@ -78,10 +78,14 @@
 /* https://seppuku.surge.sh/easy/ByppAsc0E */
 
 .solvedColor {
-    color: green;
+    color: green !important;
 }
 
 .possiblesSize {
     font-size: 10px;
     line-height: 1em;
+}
+
+.hoverColor {
+    background-color: yellow
 }
