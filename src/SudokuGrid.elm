@@ -8,6 +8,7 @@ module SudokuGrid exposing
     , boxFromList
     , fromList
     , fromListOfString
+    , fromPossibleGrid
     , initEmpty
     , initPossibleGrid
     , isSolved
@@ -171,3 +172,17 @@ split i list =
 
         listHead ->
             listHead :: split i (List.drop i list)
+
+
+fromPossibleGrid : PossibleGrid -> SudokuGrid
+fromPossibleGrid pg =
+    let
+        cellValue c =
+            case c of
+                Filled v ->
+                    Just v
+
+                Possibles p ->
+                    Nothing
+    in
+    Grid.map cellValue pg

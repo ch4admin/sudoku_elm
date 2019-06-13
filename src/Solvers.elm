@@ -3,6 +3,8 @@ module Solvers exposing
     , actionFromNoPossibles
     , getActionFromIndexedCells
     , gridFromListofBoxLists
+    , onlyPossibleValueInBox
+    , onlyPossibleValueInColumn
     , onlyPossibleValueInRow
     , removeSameBox
     , removeSameCol
@@ -95,6 +97,18 @@ removeSameCol possibleGrid =
     Array.fromList (List.map (\l -> Array.fromList l) listOfRows)
 
 
+onlyPossibleValueInColumn : PossibleGrid -> PossibleGrid
+onlyPossibleValueInColumn possibleGrid =
+    let
+        listOfColLists =
+            List.map (\arr -> onlyPossibleValueInGroup ValueOnlyPossibleInOneCellInColumn (Array.toList arr)) (Grid.toColumnsList possibleGrid)
+
+        listOfRows =
+            Grid.transposeList listOfColLists
+    in
+    Array.fromList (List.map (\l -> Array.fromList l) listOfRows)
+
+
 removeSameBox : PossibleGrid -> PossibleGrid
 removeSameBox possibleGrid =
     let
@@ -108,6 +122,24 @@ removeSameBox possibleGrid =
 
         processed =
             List.map (\l -> removeFilledValuesFromPossiblesForGroup SameBox l) boxLists
+    in
+    -- reassemble into new box
+    Grid.fromList (gridFromListofBoxLists processed [])
+
+
+onlyPossibleValueInBox : PossibleGrid -> PossibleGrid
+onlyPossibleValueInBox possibleGrid =
+    let
+        --list of 9 boxes
+        boxes =
+            SudokuGrid.listOfBoxes possibleGrid
+
+        --list of lists, each list a flattened box
+        boxLists =
+            List.map (\b -> Grid.list b) boxes
+
+        processed =
+            List.map (\l -> onlyPossibleValueInGroup ValueOnlyPossibleInOneCellInBox l) boxLists
     in
     -- reassemble into new box
     Grid.fromList (gridFromListofBoxLists processed [])
