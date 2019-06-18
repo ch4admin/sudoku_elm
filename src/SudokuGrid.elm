@@ -11,6 +11,7 @@ module SudokuGrid exposing
     , fromPossibleGrid
     , initEmpty
     , initPossibleGrid
+    , isPossible
     , isSolved
     , listOfBoxes
     , possibleCellFromValue
@@ -61,6 +62,7 @@ type Rationale
     | ValueOnlyPossibleInOneCellInRow
     | ValueOnlyPossibleInOneCellInColumn
     | ValueOnlyPossibleInOneCellInBox
+    | BoxRowLogic
 
 
 type alias Action =
@@ -82,7 +84,7 @@ initPossibleGrid grid =
 
 isSolved : PossibleGrid -> Bool
 isSolved possibleGrid =
-    List.length (List.filter isPossible (Grid.list possibleGrid)) == 0
+    List.length (List.filter isPossible (Grid.toFlattenedList possibleGrid)) == 0
 
 
 isPossible : PossibleCell -> Bool

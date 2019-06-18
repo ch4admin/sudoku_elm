@@ -29,20 +29,21 @@ examples =
                                 Solve.solution puzzle.puzzle
                         in
                         Expect.equal puzzle.solution (SudokuGrid.fromPossibleGrid possibleGrid)
-        , test "easy" <|
-            \_ ->
-                let
-                    maybePuzzle =
-                        Puzzles.puzzleFromName "4291"
-                in
-                case maybePuzzle of
-                    Nothing ->
-                        Expect.equal 2 1
 
-                    Just puzzle ->
-                        let
-                            ( possibleGrid, actions ) =
-                                Solve.solution puzzle.puzzle
-                        in
-                        Expect.equal puzzle.solution (SudokuGrid.fromPossibleGrid possibleGrid)
+        --        , test "easy" <|
+        --            \_ ->
+        --                let
+        --                    maybePuzzle =
+        --                        Puzzles.puzzleFromName "4291"
+        --                in
+        --                case maybePuzzle of
+        --                    Nothing ->
+        --                        Expect.equal 2 1
+        --
+        --                    Just puzzle ->
+        --                        let
+        --                            ( possibleGrid, actions ) =
+        --                                Solve.solution puzzle.puzzle
+        --                        in
+        --                        Expect.equal puzzle.solution (SudokuGrid.fromPossibleGrid possibleGrid)
         ]

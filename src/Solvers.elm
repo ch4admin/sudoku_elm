@@ -15,6 +15,7 @@ module Solvers exposing
 import Array exposing (Array)
 import Dict
 import Grid
+import ListExtra
 import Set
 import SudokuGrid exposing (Action, PossibleCell(..), PossibleGrid, Rationale(..), Removal)
 
@@ -118,7 +119,7 @@ removeSameBox possibleGrid =
 
         --list of lists, each list a flattened box
         boxLists =
-            List.map (\b -> Grid.list b) boxes
+            List.map (\b -> Grid.toFlattenedList b) boxes
 
         processed =
             List.map (\l -> removeFilledValuesFromPossiblesForGroup SameBox l) boxLists
@@ -136,7 +137,7 @@ onlyPossibleValueInBox possibleGrid =
 
         --list of lists, each list a flattened box
         boxLists =
-            List.map (\b -> Grid.list b) boxes
+            List.map (\b -> Grid.toFlattenedList b) boxes
 
         processed =
             List.map (\l -> onlyPossibleValueInGroup ValueOnlyPossibleInOneCellInBox l) boxLists
@@ -270,7 +271,7 @@ gridFromListofBoxLists ll output =
         lst ->
             let
                 ( first3Lists, remainder ) =
-                    splitAt 3 lst
+                    ListExtra.splitAt 3 lst
             in
             -- if no values, move on to the next set of 3 lists
             if List.any List.isEmpty first3Lists then
@@ -285,11 +286,6 @@ gridFromListofBoxLists ll output =
                         List.map (\l -> List.drop 3 l) first3Lists
                 in
                 gridFromListofBoxLists (adjLists ++ remainder) (output ++ [ row ])
-
-
-splitAt : Int -> List a -> ( List a, List a )
-splitAt n xs =
-    ( List.take n xs, List.drop n xs )
 
 
 frequencies : List comparable -> Dict.Dict comparable Int

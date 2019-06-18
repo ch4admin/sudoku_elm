@@ -1,7 +1,7 @@
 module Grid exposing
     ( Grid, Coordinate
     , set, get
-    , fromList, getColumn, getRow, indexedList, indexedRows, initSquare, list, map, slice, toColumnsList, transposeList
+    , fromList, fromListOfBoxLists, getColumn, getRow, indexedList, indexedRows, initSquare, map, slice, toColumnsList, toFlattenedList, toList, toListOfBoxLists, transposeList
     )
 
 {-| This library provides a data type to represent two-dimensional arrays.
@@ -30,6 +30,7 @@ module Grid exposing
 
 import Array exposing (Array)
 import List
+import ListExtra
 import Maybe exposing (andThen)
 import Tuple exposing (first, second)
 
@@ -49,6 +50,7 @@ type alias Coordinate =
     { x : Int, y : Int }
 
 
+fromList : List (List a) -> Grid a
 fromList aa =
     Array.fromList (List.map Array.fromList aa)
 
@@ -106,9 +108,18 @@ indexedList grid =
     List.concat lists
 
 
-list : Grid a -> List a
-list grid =
-    List.map (\( x, y, v ) -> v) (indexedList grid)
+toList : Grid a -> List (List a)
+toList grid =
+    List.map Array.toList (Array.toList grid)
+
+
+toFlattenedList : Grid a -> List a
+toFlattenedList grid =
+    List.concat (toList grid)
+
+
+
+--    List.map (\( x, y, v ) -> v) (indexedList grid)
 
 
 toColumnsList : Grid a -> List (Array a)
@@ -173,216 +184,75 @@ slice fromRow toRow fromCol toCol grid =
 
 
 
---
---transposeList : List (List a) -> List (List a)
---transposeList ll =
---  let
---
---      firstRow = List.head ll
---
---      getLength =
---          case List.head ll of
---              Nothing ->
---                  0
---              Just row ->
---                  List.length row
---
---      arr = Array.range
---
---  in
---
---
---
---
---
---  let heads = List.map (List.take 1) ll |> List.concat
---      tails = List.map (List.drop 1) ll
---  in
---      if | List.length heads == List.length ll ->
---             heads::(transpose tails)
---         | otherwise ->
---             []
---
---
---
---transpose : Grid a -> Grid a
---transpose a =
---  let
---    firstRow = getRow 0 a
---    restRows = dropRows 1 a
---  in
---    case firstRow of
---      Nothing -> a
---      Just firstRow' ->
---        let
---          vector = colVector firstRow'
---          step row acc = Array.Extra.map2 (Array.append) acc (colVector row)
---        in
---          Array.foldl step vector restRows
---transposeList : List (List a) -> Maybe (List (List a))
---transposeList ll =
---    case ll of
---        [] ->
---            Just []
---
---        [] :: xss ->
---            transposeList xss
---
---        (x :: xs) :: xss ->
---            let
---                heads =
---                    List.filterMap List.head xss
---
---                tails =
---                    List.filterMap List.tail xss
---            in
---            (x :: heads) :: transposeList (xs :: tails)
---get : Int -> Int -> Grid a -> Maybe a
---get row col grid =
---    getRow row array2d |> Maybe.andThen (Array.get col)
---oneOf : List (Maybe a) -> Maybe a
---oneOf maybes =
---    case maybes of
---        [] ->
---            Nothing
---
---        maybe :: rest ->
---            case maybe of
---                Nothing ->
---                    oneOf rest
---
---                Just _ ->
---                    maybe
---{-| Fetch the column at the given index.
---column 2 (square 3 (+)) == Array.fromList [2, 3, 4]
---column 2 (square 8 (^)) == Array.fromList [1, 2, 4, 8, 16, 32, 64, 128]
----}
---column : Int -> Grid a -> Maybe (Array a)
---column index grid =
---    let
---        got =
---            Array.map (Array.get index) grid
---    in
---    case oneOf (Array.toList got) of
---        Nothing ->
---            Nothing
---
---        Just _ ->
---            got
---                |> Array.map (Maybe.map (\x -> Array.fromList [ x ]))
---                |> Array.map (Maybe.withDefault Array.empty)
---                |> Array.foldr Array.append Array.empty
---                |> Just
---
---{-| Fetch the row at the given index.
---row 3 (repeat 1 4 "bun") == Just (Array.fromList ["bun"])
----}
---row : Int -> Grid a -> Maybe (Array a)
---row index grid =
---    Array.get index grid
---
---
---type alias Filler a =
---    Int -> Int -> a
---
---
---{-| Create a grid `width` units by `height` units, filling each cell according
---to the cell's coordinate.
---get (2, 1) (rectangle 4 2 (+)) == Just 3
----}
---rectangle : Int -> Int -> Filler a -> Grid a
---rectangle width height filler =
---    Array.initialize height (\y -> Array.initialize width (\x -> filler x y))
---
---
---{-| Like `rectangle`, except always make a square grid
----}
---square : Int -> Filler a -> Grid a
---square size filler =
---    rectangle size size filler
---
---
---{-| Create a grid just like [`Grid#rectangle`](Grid#rectangle), except just
---copy a value into each cell.
---get (2, 1) (rectangle 4 2 "foo") == Just "foo"
----}
---repeat : Int -> Int -> a -> Grid a
---repeat x y occupant =
---    rectangle x y (always << always occupant)
---
---
---{-| Like `repeat`, except make a square grid.
----}
---repeatSquare : Int -> a -> Grid a
---repeatSquare size occupant =
---    square size (always << always occupant)
---
---
---coordinate : Int -> Int -> Coordinate
---coordinate =
---    (,)
---
---
---{-| Fetch the column index from a `Coordinate`. Useful with `column`
----}
---toColumn : Coordinate -> Int
---toColumn =
---    first
---
---
---{-| Fetch the row index from a `Coordinate`. Useful with `row`.
----}
---toRow : Coordinate -> Int
---toRow =
---    second
---
---
---
----- TODO: Export or delete
----- width : Grid a -> Int
----- width grid =
-----     Array.get 0 grid
-----         |> Maybe.map Array.length
-----         |> Maybe.withDefault 0
----- height : Grid a -> Int
----- height grid =
-----     Array.length grid
---
---
---{-| Fetch the occupant at a given `Coordinate`.
---get (2,4) (square 6 (\*)) == Just 8
----}
---
---
---
-----get : Coordinate -> Grid a -> Maybe a
-----get coord grid =
-----    Array.get (toRow coord) grid |> andThen Array.get (toColumn coord)
---
---
---get : Coordinate -> Grid a -> Maybe a
---get coord grid =
---    andThen (Array.get (toColumn coord)) (Array.get (toRow coord) grid)
---
---
---{-| Overwrite the occupant at a given `Coordinate`
----}
---set : Coordinate -> a -> Grid a -> Grid a
---set coord occupant grid =
---    row (toRow coord) grid
---        |> Maybe.map (Array.set (toColumn coord) occupant)
---        |> Maybe.map (\r -> Array.set (toRow coord) r grid)
---        |> Maybe.withDefault grid
---        |> Debug.log "new"
---
---
---map : (a -> b) -> Grid a -> Grid b
---map f grid =
---    Array.map (Array.map f) grid
---
---
---mapWithCoordinate : (Coordinate -> a -> b) -> Grid a -> Grid b
---mapWithCoordinate f grid =
---    Array.indexedMap
---        (\y -> Array.indexedMap (\x -> f (coordinate x y)))
---        grid
+-- take a grid, and extract boxes of width / height as individual lists of items
+
+
+toListOfBoxLists : Int -> Int -> Grid a -> List (List a)
+toListOfBoxLists rowsPerBox columnsPerBox g =
+    makeToListOfBoxLists rowsPerBox columnsPerBox (toList g) []
+
+
+makeToListOfBoxLists : Int -> Int -> List (List a) -> List (List a) -> List (List a)
+makeToListOfBoxLists rowsPerBox columnsPerBox lst output =
+    case lst of
+        [] ->
+            output
+
+        nonEmptyList ->
+            let
+                ( beginning, remainder ) =
+                    ListExtra.splitAt rowsPerBox nonEmptyList
+            in
+            case beginning of
+                [] ->
+                    -- move onto remainder if empty
+                    makeToListOfBoxLists rowsPerBox columnsPerBox remainder output
+
+                rows ->
+                    let
+                        box =
+                            List.concat (List.map (\row -> List.take columnsPerBox row) rows)
+
+                        rowRemainders =
+                            let
+                                remainders =
+                                    List.map (\r -> List.drop columnsPerBox r) rows
+                            in
+                            if List.any (\r -> List.isEmpty r) remainders then
+                                []
+
+                            else
+                                remainders
+                    in
+                    makeToListOfBoxLists rowsPerBox columnsPerBox (rowRemainders ++ remainder) (output ++ [ box ])
+
+
+fromListOfBoxLists : Int -> Int -> List (List a) -> Grid a
+fromListOfBoxLists rowsPerBox columnsPerBox lst =
+    makeFromListOfBoxLists rowsPerBox columnsPerBox lst []
+
+
+makeFromListOfBoxLists : Int -> Int -> List (List a) -> List (List a) -> Grid a
+makeFromListOfBoxLists rowsPerBox columnsPerBox lst output =
+    case lst of
+        [] ->
+            fromList output
+
+        nonEmptyList ->
+            let
+                ( beginning, remainder ) =
+                    ListExtra.splitAt rowsPerBox nonEmptyList
+            in
+            -- if no values, move on to the next set of 3 lists
+            if List.any List.isEmpty beginning then
+                makeFromListOfBoxLists rowsPerBox columnsPerBox remainder output
+
+            else
+                let
+                    row =
+                        List.concat (List.map (\l -> List.take columnsPerBox l) beginning)
+
+                    adjLists =
+                        List.map (\l -> List.drop columnsPerBox l) beginning
+                in
+                makeFromListOfBoxLists rowsPerBox columnsPerBox (adjLists ++ remainder) (output ++ [ row ])
