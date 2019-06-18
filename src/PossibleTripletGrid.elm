@@ -1,8 +1,12 @@
 module PossibleTripletGrid exposing
     ( PossibleTripletCell
     , PossibleTripletGrid
+    , applyBoxRowLogic
+    , applyTripletLogic
+    , fillWhereValueOnlyPossibleInOneCell
     , fromPossibleGrid
     , tripletFromRow
+    , updatePossibleGrid
     )
 
 import Array exposing (Array)
@@ -27,7 +31,7 @@ fromPossibleGrid pg =
 
 tripletRowsFromRow : Array PossibleCell -> Array PossibleTripletCell
 tripletRowsFromRow row =
-    Array.fromList (List.map tripletFromRow (groupsOf 3 (Array.toList row)))
+    Array.fromList (List.map tripletFromRow (ListExtra.groupsOf 3 (Array.toList row)))
 
 
 tripletFromRow : List PossibleCell -> PossibleTripletCell
@@ -56,71 +60,6 @@ tripletFromRow row =
             Set.fromList (List.concat (List.map getPossibleValues row))
     in
     PossibleTripletCell values remaining
-
-
-
--- unpack a PTG into a list, each one a list of 3 TripletCells
-
-
-toListOfBoxLists : PossibleTripletGrid -> List (List PossibleTripletCell)
-toListOfBoxLists ptg =
-    makeToListOfBoxLists (Grid.toList ptg) []
-
-
-makeToListOfBoxLists lst output =
-    case lst of
-        [] ->
-            output
-
-        nonEmptyLst ->
-            let
-                ( beginning, remainder ) =
-                    ListExtra.splitAt 3 nonEmptyLst
-            in
-            case beginning of
-                [] ->
-                    makeToListOfBoxLists remainder output
-
-                rows ->
-                    let
-                        box =
-                            List.concat (List.map (\row -> List.take 3 row) rows)
-
-                        rowRemainders =
-                            List.map (\row -> List.drop 3 row) rows
-                    in
-                    makeToListOfBoxLists (rowRemainders ++ remainder) (output ++ [ box ])
-
-
-
---from List.Extra
-
-
-groupsOf : Int -> List a -> List (List a)
-groupsOf size xs =
-    groupsOfWithStep size size xs
-
-
-groupsOfWithStep : Int -> Int -> List a -> List (List a)
-groupsOfWithStep size step xs =
-    let
-        group =
-            List.take size xs
-
-        xs_ =
-            List.drop step xs
-
-        okayArgs =
-            size > 0 && step > 0
-
-        okayLength =
-            size == List.length group
-    in
-    if okayArgs && okayLength then
-        group :: groupsOfWithStep size step xs_
-
-    else
-        []
 
 
 
@@ -167,7 +106,12 @@ updateRow ptgRow pgRow output =
 
 
 updatePossibleCellsFromBoxRow possibleTripletCell possibleCells =
-    List.map (\c -> updatePossibleCellFromTriplet possibleTripletCell.remaining c) possibleCells
+    let
+        -- values that can remain in each cell are both filled and remaining values for the tripled
+        possibleValues =
+            Set.union possibleTripletCell.values possibleTripletCell.remaining
+    in
+    List.map (\c -> updatePossibleCellFromTriplet possibleValues c) possibleCells
 
 
 updatePossibleCellFromTriplet : Set.Set Int -> PossibleCell -> PossibleCell
@@ -176,8 +120,11 @@ updatePossibleCellFromTriplet tripletRemaining c =
         Possibles p ->
             let
                 -- if cant exist in triplet, then cant exist in PossibleCell
-                newRemaining =
+                invalidValues =
                     Set.diff p.remaining tripletRemaining
+
+                newRemaining =
+                    Set.diff p.remaining invalidValues
             in
             if newRemaining == p.remaining then
                 Possibles p
@@ -197,11 +144,11 @@ applyBoxRowLogic : PossibleTripletGrid -> PossibleTripletGrid
 applyBoxRowLogic ptg =
     let
         adjustedBoxes =
-            List.map fillWhereOnlyOneCellPossible (Grid.toListOfBoxLists 3 1 ptg)
+            List.map fillWhereValueOnlyPossibleInOneCell (Grid.toListOfBoxLists 3 1 ptg)
 
         -- reassemble into rows
         rows =
-            []
+            Grid.toList (Grid.fromListOfBoxLists 3 1 adjustedBoxes)
 
         newRows =
             List.map removePossibleWhereFilled rows
@@ -209,11 +156,11 @@ applyBoxRowLogic ptg =
     Grid.fromList newRows
 
 
-fillWhereOnlyOneCellPossible : List PossibleTripletCell -> List PossibleTripletCell
-fillWhereOnlyOneCellPossible boxOfptg =
+fillWhereValueOnlyPossibleInOneCell : List PossibleTripletCell -> List PossibleTripletCell
+fillWhereValueOnlyPossibleInOneCell boxOfptg =
     let
         possibles =
-            List.concat (List.map (\c -> Set.toList c.values) boxOfptg)
+            List.concat (List.map (\c -> Set.toList c.remaining) boxOfptg)
 
         isUnique v =
             List.length (List.filter (\x -> x == v) possibles) == 1
@@ -247,13 +194,15 @@ fillPossibleTripletCell uniques ptc =
 -- generate list of cells for each box
 
 
+removePossibleWhereFilled : List PossibleTripletCell -> List PossibleTripletCell
 removePossibleWhereFilled row =
     let
+        -- get all filled values in the row
         filled =
             row |> List.map (\c -> Set.toList c.values) |> List.concat |> Set.fromList
 
         removeFilled c =
-            PossibleTripletCell c.filled (Set.diff c.remaining filled)
+            PossibleTripletCell c.values (Set.diff c.remaining filled)
 
         --        filled = Set.fromList (List.concat (List.map (\c -> Set.toList c.values) row))
     in

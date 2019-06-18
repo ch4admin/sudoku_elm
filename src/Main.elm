@@ -299,5 +299,8 @@ rationaleText removal value =
 
                 ValueOnlyPossibleInOneCellInBox ->
                     String.fromInt value ++ " is not possible in any other cell in this box"
+
+                BoxRowLogic ->
+                    "BoxRowLogic"
     in
     "Not [" ++ String.join "," (List.map String.fromInt removal.values) ++ "]: " ++ logicText

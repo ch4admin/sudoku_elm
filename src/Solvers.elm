@@ -2,7 +2,6 @@ module Solvers exposing
     ( actionFromCellWithOnePossible
     , actionFromNoPossibles
     , getActionFromIndexedCells
-    , gridFromListofBoxLists
     , onlyPossibleValueInBox
     , onlyPossibleValueInColumn
     , onlyPossibleValueInRow
@@ -125,7 +124,7 @@ removeSameBox possibleGrid =
             List.map (\l -> removeFilledValuesFromPossiblesForGroup SameBox l) boxLists
     in
     -- reassemble into new box
-    Grid.fromList (gridFromListofBoxLists processed [])
+    Grid.fromListOfBoxLists 3 3 processed
 
 
 onlyPossibleValueInBox : PossibleGrid -> PossibleGrid
@@ -143,7 +142,7 @@ onlyPossibleValueInBox possibleGrid =
             List.map (\l -> onlyPossibleValueInGroup ValueOnlyPossibleInOneCellInBox l) boxLists
     in
     -- reassemble into new box
-    Grid.fromList (gridFromListofBoxLists processed [])
+    Grid.fromListOfBoxLists 3 3 processed
 
 
 onlyPossibleValueInGroup : Rationale -> List PossibleCell -> List PossibleCell
@@ -260,32 +259,6 @@ getFilledValues list =
             )
             list
         )
-
-
-gridFromListofBoxLists : List (List a) -> List (List a) -> List (List a)
-gridFromListofBoxLists ll output =
-    case ll of
-        [] ->
-            output
-
-        lst ->
-            let
-                ( first3Lists, remainder ) =
-                    ListExtra.splitAt 3 lst
-            in
-            -- if no values, move on to the next set of 3 lists
-            if List.any List.isEmpty first3Lists then
-                gridFromListofBoxLists remainder output
-
-            else
-                let
-                    row =
-                        List.concat (List.map (\l -> List.take 3 l) first3Lists)
-
-                    adjLists =
-                        List.map (\l -> List.drop 3 l) first3Lists
-                in
-                gridFromListofBoxLists (adjLists ++ remainder) (output ++ [ row ])
 
 
 frequencies : List comparable -> Dict.Dict comparable Int
