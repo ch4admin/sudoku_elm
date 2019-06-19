@@ -1,5 +1,6 @@
 module Solve exposing (solution, solutionFromPossibleGrid)
 
+import PossibleTripletGrid
 import Solvers
 import SudokuGrid exposing (Action, PossibleGrid, SudokuGrid, initPossibleGrid, isSolved, updatePossibleGrid)
 
@@ -18,20 +19,27 @@ solutionFromPossibleGrid possibleGrid actions =
         let
             -- modify possibleGrid
             newGrid =
-                Solvers.removeSameRow possibleGrid
+                possibleGrid
+                    |> Solvers.removeSameRow
                     |> Solvers.removeSameCol
                     |> Solvers.removeSameBox
                     |> Solvers.onlyPossibleValueInRow
                     |> Solvers.onlyPossibleValueInColumn
                     |> Solvers.onlyPossibleValueInBox
+                    |> PossibleTripletGrid.applyTripletLogic
 
             action =
                 Debug.log "Action:" (getAction Solvers.solversList newGrid)
         in
         case action of
             Nothing ->
-                -- if cant solve just return
-                ( newGrid, actions )
+                -- if grid is modified try again to generate an action
+                -- otherwise just return
+                if newGrid /= possibleGrid then
+                    solutionFromPossibleGrid newGrid actions
+
+                else
+                    ( newGrid, actions )
 
             Just a ->
                 -- apply action to update grid, and recurse
@@ -40,6 +48,13 @@ solutionFromPossibleGrid possibleGrid actions =
                         updatePossibleGrid a newGrid
                 in
                 solutionFromPossibleGrid pg (actions ++ [ a ])
+
+
+{-| direct logic. If run twice, will not result in a different answer
+-}
+applyDirectLogic : PossibleGrid -> PossibleGrid
+applyDirectLogic pg =
+    pg |> Solvers.removeSameRow |> Solvers.removeSameCol |> Solvers.removeSameBox
 
 
 

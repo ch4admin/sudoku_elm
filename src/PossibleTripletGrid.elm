@@ -184,8 +184,16 @@ fillPossibleTripletCell uniques ptc =
         filled =
             Set.union ptc.values matchingUniques
 
+        -- no more possibles if we have a filled set
         remaining =
-            Set.diff ptc.remaining uniques
+            if Set.size filled == 3 then
+                Set.empty
+
+            else
+                Set.diff ptc.remaining uniques
+
+        --        remaining =
+        --            Set.diff ptc.remaining uniques
     in
     PossibleTripletCell filled remaining
 
