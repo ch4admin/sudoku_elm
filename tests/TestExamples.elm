@@ -3,7 +3,7 @@ module TestExamples exposing (examples)
 import Array
 import Debug
 import Expect exposing (Expectation)
-import Grid exposing (Coordinate, get, getRow)
+import Grid exposing (get, getRow)
 import Puzzles
 import Solve
 import SudokuGrid

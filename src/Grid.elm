@@ -1,5 +1,5 @@
 module Grid exposing
-    ( Grid, Coordinate
+    ( Grid
     , set, get
     , fromList, fromListOfBoxLists, getColumn, getRow, indexedList, indexedRows, initSquare, map, slice, toColumnsList, toFlattenedList, toList, toListOfBoxLists, transposeList
     )
@@ -44,12 +44,6 @@ type alias Grid a =
     Array (Array a)
 
 
-{-| Type to use when indexing into `Grid`.
--}
-type alias Coordinate =
-    { x : Int, y : Int }
-
-
 fromList : List (List a) -> Grid a
 fromList aa =
     Array.fromList (List.map Array.fromList aa)
@@ -81,10 +75,8 @@ map f grid =
     Array.map (Array.map f) grid
 
 
-
---indexedList : Grid a -> List ( Int, Int, a )
-
-
+{-| indexedList : Grid a -> List ( Int, Int, a )
+-}
 indexedRows : Grid a -> List ( Int, Array a )
 indexedRows grid =
     Array.toIndexedList grid

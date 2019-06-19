@@ -2,7 +2,7 @@ module TestSolvers exposing (testSolvers)
 
 import Array
 import Expect exposing (Expectation)
-import Grid exposing (Coordinate, get)
+import Grid exposing (get)
 import Set
 import Solvers
 import SudokuGrid

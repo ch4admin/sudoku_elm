@@ -2,17 +2,14 @@ module TestGrid exposing (grid)
 
 import Array
 import Expect exposing (Expectation)
-import Grid exposing (Coordinate, get, getRow)
+import Grid exposing (get, getRow)
 import Test exposing (..)
 
 
 grid : Test
 grid =
     describe "Grid"
-        [ test "coordinate init" <|
-            \_ ->
-                Expect.equal (Coordinate 1 2) { x = 1, y = 2 }
-        , test "fromList" <|
+        [ test "fromList" <|
             \_ ->
                 Expect.equal (Grid.fromList [ [ 1, 2 ], [ 3, 4 ] ]) (Array.fromList [ Array.fromList [ 1, 2 ], Array.fromList [ 3, 4 ] ])
         , test "initSquare" <|
