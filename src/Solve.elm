@@ -29,7 +29,7 @@ solutionFromPossibleList2d actions p2d =
                     |> SolversReduction.valueOnlyPossibleInOneCellInColumn
                     |> SolversReduction.valueOnlyPossibleInOneCellInBox
 
-            --                    |> PossibleTripletGrid.applyTripletLogic
+            --                    |> PossibleTripletList2d.applyTripletLogic
             maybeAction =
                 Action.getAction newP2d
         in

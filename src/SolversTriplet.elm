@@ -1,98 +1,24 @@
-module PossibleTripletGrid exposing
-    ( PossibleTripletCell
-    , PossibleTripletGrid
-    , applyBoxRowLogic
-    , applyTripletLogic
-    , columnTripletsFromPossibleGrid
-    , fillWhereValueOnlyPossibleInOneCell
-    , rowTripletsfromPossibleGrid
-    , tripletFromPossibleCells
-    , updatePossibleGridFromRowTriplets
-    )
-
-import Array exposing (Array)
-import Grid
-import ListExtra
-import Set
-import SudokuGrid exposing (PossibleCell(..), PossibleGrid, Rationale(..), Removal)
-
-
-type alias PossibleTripletGrid =
-    Grid.Grid PossibleTripletCell
-
-
-type alias PossibleTripletCell =
-    { values : Set.Set Int, remaining : Set.Set Int }
-
-
-rowTripletsfromPossibleGrid : PossibleGrid -> PossibleTripletGrid
-rowTripletsfromPossibleGrid pg =
-    Array.map tripletRowsFromRow pg
-
-
-tripletRowsFromRow : Array PossibleCell -> Array PossibleTripletCell
-tripletRowsFromRow row =
-    Array.fromList (List.map tripletFromPossibleCells (ListExtra.groupsOf 3 (Array.toList row)))
-
-
-tripletFromPossibleCells : List PossibleCell -> PossibleTripletCell
-tripletFromPossibleCells row =
-    let
-        getValues pc =
-            case pc of
-                Possibles _ ->
-                    []
-
-                Filled v ->
-                    [ v ]
-
-        values =
-            Set.fromList (List.concat (List.map getValues row))
-
-        getPossibleValues pc =
-            case pc of
-                Possibles p ->
-                    Set.toList p.remaining
-
-                Filled _ ->
-                    []
-
-        remaining =
-            Set.fromList (List.concat (List.map getPossibleValues row))
-    in
-    PossibleTripletCell values remaining
-
-
-columnTripletsFromPossibleGrid : PossibleGrid -> PossibleTripletGrid
-columnTripletsFromPossibleGrid pg =
-    let
-        groups =
-            Grid.toListOfBoxLists 3 1 pg
-
-        triplets =
-            List.map tripletFromPossibleCells groups
-    in
-    Grid.fromList2d (ListExtra.groupsOf 9 triplets)
+module SolversTriplet exposing (applyBoxColumnLogic, applyBoxRowLogic, applyTripletLogic, fillPossibleTripletCell, fillWhereValueOnlyPossibleInOneCell, removePossibleWhereFilled, updatePossibleCellFromTriplet, updatePossibleCellsFromBoxRow, updatePossibleGridFromRowTriplets, updateRow)
 
 
 applyTripletLogic : PossibleGrid -> PossibleGrid
 applyTripletLogic pg =
     let
         ptgFromRows =
-            pg |> rowTripletsfromPossibleGrid |> applyBoxRowLogic
+            pg |> rowTripletsfromPossibleList2d |> applyBoxRowLogic
 
         newPg =
             updatePossibleGridFromRowTriplets ptgFromRows pg
 
         ptgFromCols =
-            newPg |> columnTripletsFromPossibleGrid
+            newPg |> columnTripletsFromPossibleList2d
     in
     updatePossibleGridFromRowTriplets ptgFromRows pg
 
 
 {-| apply any logic from triplet grid to possiblegrid
 -}
-updatePossibleGridFromRowTriplets : PossibleTripletGrid -> PossibleGrid -> PossibleGrid
+updatePossibleGridFromRowTriplets : PossibleTripletList2d -> PossibleGrid -> PossibleGrid
 updatePossibleGridFromRowTriplets ptg pg =
     List.map2 (\x y -> updateRow (Array.toList x) (Array.toList y) []) (Array.toList ptg) (Array.toList pg) |> Grid.fromList2d
 
@@ -153,7 +79,7 @@ updatePossibleCellFromTriplet tripletRemaining c =
             Filled v
 
 
-applyBoxRowLogic : PossibleTripletGrid -> PossibleTripletGrid
+applyBoxRowLogic : PossibleTripletList2d -> PossibleTripletList2d
 applyBoxRowLogic ptg =
     let
         adjustedBoxes =
@@ -169,7 +95,7 @@ applyBoxRowLogic ptg =
     Grid.fromList2d newRows
 
 
-applyBoxColumnLogic : PossibleTripletGrid -> PossibleTripletGrid
+applyBoxColumnLogic : PossibleTripletList2d -> PossibleTripletList2d
 applyBoxColumnLogic ptg =
     let
         adjustedBoxes =
