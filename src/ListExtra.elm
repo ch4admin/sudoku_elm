@@ -1,4 +1,6 @@
-module ListExtra exposing (groupsOf, splitAt)
+module ListExtra exposing (frequencies, groupsOf, splitAt)
+
+import Dict
 
 
 splitAt : Int -> List a -> ( List a, List a )
@@ -31,3 +33,16 @@ groupsOfWithStep size step xs =
 
     else
         []
+
+
+frequencies : List comparable -> Dict.Dict comparable Int
+frequencies list =
+    list
+        |> List.foldl
+            (\el counter ->
+                Dict.get el counter
+                    |> Maybe.withDefault 0
+                    |> (\count -> count + 1)
+                    |> (\count -> Dict.insert el count counter)
+            )
+            Dict.empty

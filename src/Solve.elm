@@ -1,76 +1,48 @@
-module Solve exposing (solution, solutionFromPossibleGrid)
+module Solve exposing (getSolution, solutionFromPossibleList2d)
 
-import PossibleTripletGrid
-import Solvers
-import SudokuGrid exposing (Action, PossibleGrid, SudokuGrid, initPossibleGrid, isSolved, updatePossibleGrid)
-
-
-solution : SudokuGrid -> ( PossibleGrid, List Action )
-solution sudokuGrid =
-    solutionFromPossibleGrid (initPossibleGrid sudokuGrid) []
+import Action exposing (Action)
+import PossibleList2d exposing (PossibleList2d)
+import SolversDirectLogic
+import SolversReduction
+import SudokuGrid exposing (SudokuGrid)
 
 
-solutionFromPossibleGrid : PossibleGrid -> List Action -> ( PossibleGrid, List Action )
-solutionFromPossibleGrid possibleGrid actions =
-    if isSolved possibleGrid then
-        ( possibleGrid, actions )
+getSolution : SudokuGrid -> ( PossibleList2d, List Action )
+getSolution sudokuGrid =
+    PossibleList2d.fromSudokuGrid sudokuGrid |> solutionFromPossibleList2d []
+
+
+solutionFromPossibleList2d : List Action -> PossibleList2d -> ( PossibleList2d, List Action )
+solutionFromPossibleList2d actions p2d =
+    if PossibleList2d.isSolved p2d then
+        ( p2d, actions )
 
     else
         let
             -- modify possibleGrid
-            newGrid =
-                possibleGrid
-                    |> Solvers.removeSameRow
-                    |> Solvers.removeSameCol
-                    |> Solvers.removeSameBox
-                    |> Solvers.onlyPossibleValueInRow
-                    |> Solvers.onlyPossibleValueInColumn
-                    |> Solvers.onlyPossibleValueInBox
-                    |> PossibleTripletGrid.applyTripletLogic
+            newP2d =
+                p2d
+                    |> SolversDirectLogic.removeFilledInSameRow
+                    |> SolversDirectLogic.removeFilledInSameColumn
+                    |> SolversDirectLogic.removeFilledInSameBox
+                    |> SolversReduction.valueOnlyPossibleInOneCellInRow
+                    |> SolversReduction.valueOnlyPossibleInOneCellInColumn
+                    |> SolversReduction.valueOnlyPossibleInOneCellInBox
 
-            action =
-                Debug.log "Action:" (getAction Solvers.solversList newGrid)
+            --                    |> PossibleTripletGrid.applyTripletLogic
+            maybeAction =
+                Action.getAction newP2d
         in
-        case action of
+        case maybeAction of
             Nothing ->
                 -- if grid is modified try again to generate an action
                 -- otherwise just return
-                if newGrid /= possibleGrid then
-                    solutionFromPossibleGrid newGrid actions
+                if newP2d /= p2d then
+                    solutionFromPossibleList2d actions newP2d
 
                 else
-                    ( newGrid, actions )
+                    ( newP2d, actions )
 
             Just a ->
                 -- apply action to update grid, and recurse
-                let
-                    pg =
-                        updatePossibleGrid a newGrid
-                in
-                solutionFromPossibleGrid pg (actions ++ [ a ])
-
-
-{-| direct logic. If run twice, will not result in a different answer
--}
-applyDirectLogic : PossibleGrid -> PossibleGrid
-applyDirectLogic pg =
-    pg |> Solvers.removeSameRow |> Solvers.removeSameCol |> Solvers.removeSameBox
-
-
-
---iterate solvers to try to find an action
-
-
-getAction : List (PossibleGrid -> Maybe Action) -> PossibleGrid -> Maybe Action
-getAction solvers possibleGrid =
-    case solvers of
-        [] ->
-            Nothing
-
-        solver :: ss ->
-            case solver possibleGrid of
-                Nothing ->
-                    getAction ss possibleGrid
-
-                Just a ->
-                    Just a
+                solutionFromPossibleList2d (actions ++ [ a ]) (Action.updatePossibleList2d a newP2d)

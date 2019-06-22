@@ -72,7 +72,7 @@ columnTripletsFromPossibleGrid pg =
         triplets =
             List.map tripletFromPossibleCells groups
     in
-    Grid.fromList (ListExtra.groupsOf 9 triplets)
+    Grid.fromList2d (ListExtra.groupsOf 9 triplets)
 
 
 applyTripletLogic : PossibleGrid -> PossibleGrid
@@ -94,7 +94,7 @@ applyTripletLogic pg =
 -}
 updatePossibleGridFromRowTriplets : PossibleTripletGrid -> PossibleGrid -> PossibleGrid
 updatePossibleGridFromRowTriplets ptg pg =
-    List.map2 (\x y -> updateRow (Array.toList x) (Array.toList y) []) (Array.toList ptg) (Array.toList pg) |> Grid.fromList
+    List.map2 (\x y -> updateRow (Array.toList x) (Array.toList y) []) (Array.toList ptg) (Array.toList pg) |> Grid.fromList2d
 
 
 updateRow : List PossibleTripletCell -> List PossibleCell -> List PossibleCell -> List PossibleCell
@@ -161,12 +161,12 @@ applyBoxRowLogic ptg =
 
         -- reassemble into rows
         rows =
-            Grid.toList (Grid.fromListOfBoxLists 3 1 adjustedBoxes)
+            Grid.toListOfList (Grid.fromListOfBoxLists 3 1 adjustedBoxes)
 
         newRows =
             List.map removePossibleWhereFilled rows
     in
-    Grid.fromList newRows
+    Grid.fromList2d newRows
 
 
 applyBoxColumnLogic : PossibleTripletGrid -> PossibleTripletGrid
@@ -177,12 +177,12 @@ applyBoxColumnLogic ptg =
 
         -- reassemble into rows
         rows =
-            Grid.toList (Grid.fromListOfBoxLists 1 3 adjustedBoxes)
+            Grid.toListOfList (Grid.fromListOfBoxLists 1 3 adjustedBoxes)
 
         newRows =
             List.map removePossibleWhereFilled rows
     in
-    Grid.fromList newRows
+    Grid.fromList2d newRows
 
 
 fillWhereValueOnlyPossibleInOneCell : List PossibleTripletCell -> List PossibleTripletCell

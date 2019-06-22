@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Action exposing (Action)
 import Browser
 import Browser.Navigation as Nav
 import Debug
@@ -7,10 +8,12 @@ import Grid
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onMouseOver)
+import List2d
+import PossibleList2d exposing (PossibleCell(..), PossibleList2d, Rationale(..), Removal)
 import Puzzles exposing (Puzzle, puzzles)
 import Set
 import Solve
-import SudokuGrid exposing (Action, PossibleCell(..), PossibleGrid, Rationale(..), Removal, SudokuGrid)
+import SudokuGrid exposing (SudokuGrid)
 import Url
 
 
@@ -36,7 +39,7 @@ type alias Model =
     , puzzle : Maybe Puzzle
     , puzzles : List Puzzle
     , solved : Bool
-    , solution : Maybe PossibleGrid
+    , solution : Maybe PossibleList2d
     , actions : List Action
     , hoverCell : Maybe ( Int, Int )
     }
@@ -84,7 +87,7 @@ update msg model =
                 Just p ->
                     let
                         ( solution, actions ) =
-                            Solve.solution p.puzzle
+                            Solve.getSolution p.puzzle
                     in
                     ( { model
                         | solution = Just solution
@@ -146,8 +149,8 @@ gridFromPuzzle puzzle =
             p.puzzle
 
 
-sudokuBoardView : SudokuGrid -> Maybe PossibleGrid -> Bool -> Maybe ( Int, Int ) -> Html Msg
-sudokuBoardView originalGrid solutionGrid solved hoverCell =
+sudokuBoardView : SudokuGrid -> Maybe PossibleList2d -> Bool -> Maybe ( Int, Int ) -> Html Msg
+sudokuBoardView originalGrid solutionP2d isSolved hoverCell =
     let
         boardRow i =
             div [ class "skuBoardRow" ] (List.map (\j -> box i j) (List.range 0 2))
@@ -164,7 +167,7 @@ sudokuBoardView originalGrid solutionGrid solved hoverCell =
                 col m =
                     j * 3 + m
             in
-            div [ class "skuBoxRow" ] (List.map (\m -> cell row (col m) solved originalGrid solutionGrid hoverCell) (List.range 0 2))
+            div [ class "skuBoxRow" ] (List.map (\m -> cell row (col m) isSolved originalGrid solutionP2d hoverCell) (List.range 0 2))
 
         boardRows =
             List.map boardRow (List.range 0 2)
@@ -182,8 +185,8 @@ hover x y hoverCell =
             hx == x && hy == y
 
 
-cell : Int -> Int -> Bool -> SudokuGrid -> Maybe PossibleGrid -> Maybe ( Int, Int ) -> Html Msg
-cell row col solved originalGrid maybeSolutionGrid hoverCell =
+cell : Int -> Int -> Bool -> SudokuGrid -> Maybe PossibleList2d -> Maybe ( Int, Int ) -> Html Msg
+cell row col solved originalGrid maybeSolutionP2d hoverCell =
     let
         ov =
             originalValue row col originalGrid
@@ -202,13 +205,13 @@ cell row col solved originalGrid maybeSolutionGrid hoverCell =
                     div [ class ("skuCell" ++ hoverClass) ] [ text (String.fromInt v) ]
 
                 Nothing ->
-                    case maybeSolutionGrid of
+                    case maybeSolutionP2d of
                         Nothing ->
                             -- cant have no solution if solved
                             div [ class ("skuCell" ++ hoverClass) ] [ text "" ]
 
-                        Just solutionGrid ->
-                            case Grid.get row col solutionGrid of
+                        Just solutionP2d ->
+                            case List2d.get row col solutionP2d of
                                 Nothing ->
                                     div [ class ("skuCell" ++ hoverClass) ] [ text "" ]
 

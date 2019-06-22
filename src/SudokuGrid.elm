@@ -1,21 +1,10 @@
 module SudokuGrid exposing
-    ( Action
-    , PossibleCell(..)
-    , PossibleGrid
-    , Rationale(..)
-    , Removal
-    , SudokuGrid
+    ( SudokuGrid
     , boxFromList
     , fromList
     , fromListOfString
-    , fromPossibleGrid
     , initEmpty
-    , initPossibleGrid
-    , isPossible
-    , isSolved
     , listOfBoxes
-    , possibleCellFromValue
-    , updatePossibleGrid
     )
 
 import Array exposing (Array)
@@ -29,7 +18,7 @@ type alias SudokuGrid =
 
 fromList : List (List (Maybe Int)) -> SudokuGrid
 fromList aa =
-    Grid.fromList aa
+    Grid.fromList2d aa
 
 
 fromListOfString : List String -> SudokuGrid
@@ -46,78 +35,9 @@ intFromChar c =
     String.toInt (String.fromChar c)
 
 
-type PossibleCell
-    = Filled Int
-    | Possibles { remaining : Set.Set Int, removed : List Removal }
-
-
-type alias Removal =
-    { values : List Int, rationale : Rationale }
-
-
-type Rationale
-    = SameRow
-    | SameColumn
-    | SameBox
-    | ValueOnlyPossibleInOneCellInRow
-    | ValueOnlyPossibleInOneCellInColumn
-    | ValueOnlyPossibleInOneCellInBox
-    | BoxRowLogic
-
-
-type alias Action =
-    { x : Int, y : Int, value : Int, removed : List Removal }
-
-
-type alias PossibleGrid =
-    Grid.Grid PossibleCell
-
-
-initPossibleGrid : SudokuGrid -> PossibleGrid
-initPossibleGrid grid =
-    Grid.map possibleCellFromValue grid
-
-
-
---PossibleCell from Sudoku value (Nothing or filled value)
-
-
-isSolved : PossibleGrid -> Bool
-isSolved possibleGrid =
-    List.length (List.filter isPossible (Grid.toFlattenedList possibleGrid)) == 0
-
-
-isPossible : PossibleCell -> Bool
-isPossible c =
-    case c of
-        Possibles _ ->
-            True
-
-        _ ->
-            False
-
-
-
---create a possible cell from a sudoku value or nothing
-
-
-possibleCellFromValue : Maybe Int -> PossibleCell
-possibleCellFromValue v =
-    case v of
-        Nothing ->
-            Possibles { remaining = Set.fromList (List.range 1 9), removed = [] }
-
-        Just value ->
-            Filled value
-
-
 
 --find a solution for the grid
 -- apply action to possibleGrid to change it
-
-
-updatePossibleGrid action possibleGrid =
-    Grid.set action.x action.y (Filled action.value) possibleGrid
 
 
 initEmpty : SudokuGrid
@@ -163,7 +83,7 @@ getBox boxRow boxCol g =
 
 boxFromList : List a -> Grid.Grid a
 boxFromList l =
-    Grid.fromList (split 3 l)
+    Grid.fromList2d (split 3 l)
 
 
 split : Int -> List a -> List (List a)
@@ -174,17 +94,3 @@ split i list =
 
         listHead ->
             listHead :: split i (List.drop i list)
-
-
-fromPossibleGrid : PossibleGrid -> SudokuGrid
-fromPossibleGrid pg =
-    let
-        cellValue c =
-            case c of
-                Filled v ->
-                    Just v
-
-                Possibles p ->
-                    Nothing
-    in
-    Grid.map cellValue pg

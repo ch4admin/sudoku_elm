@@ -1,7 +1,7 @@
 module Grid exposing
     ( Grid
     , set, get
-    , fromList, fromListOfBoxLists, getColumn, getRow, indexedList, indexedRows, initSquare, map, slice, toColumnsList, toFlattenedList, toList, toListOfBoxLists, transposeList
+    , fromList2d, getColumn, getRow, indexedList, indexedRows, initSquare, map, slice, toColumnsList, toFlattenedList, toListOfList
     )
 
 {-| This library provides a data type to represent two-dimensional arrays.
@@ -44,8 +44,8 @@ type alias Grid a =
     Array (Array a)
 
 
-fromList : List (List a) -> Grid a
-fromList aa =
+fromList2d : List (List a) -> Grid a
+fromList2d aa =
     Array.fromList (List.map Array.fromList aa)
 
 
@@ -100,14 +100,14 @@ indexedList grid =
     List.concat lists
 
 
-toList : Grid a -> List (List a)
-toList grid =
+toListOfList : Grid a -> List (List a)
+toListOfList grid =
     List.map Array.toList (Array.toList grid)
 
 
 toFlattenedList : Grid a -> List a
 toFlattenedList grid =
-    List.concat (toList grid)
+    List.concat (toListOfList grid)
 
 
 
@@ -151,21 +151,6 @@ compactAndConvertToList arr =
     List.filterMap identity arr
 
 
-transposeList : List (List a) -> List (List a)
-transposeList listOfLists =
-    List.foldr (List.map2 (::)) (List.repeat (rowsLength listOfLists) []) listOfLists
-
-
-rowsLength : List (List a) -> Int
-rowsLength listOfLists =
-    case listOfLists of
-        [] ->
-            0
-
-        x :: _ ->
-            List.length x
-
-
 slice : Int -> Int -> Int -> Int -> Grid a -> Grid a
 slice fromRow toRow fromCol toCol grid =
     let
@@ -177,74 +162,3 @@ slice fromRow toRow fromCol toCol grid =
 
 
 -- take a grid, and extract boxes of width / height as individual lists of items
-
-
-toListOfBoxLists : Int -> Int -> Grid a -> List (List a)
-toListOfBoxLists rowsPerBox columnsPerBox g =
-    makeToListOfBoxLists rowsPerBox columnsPerBox (toList g) []
-
-
-makeToListOfBoxLists : Int -> Int -> List (List a) -> List (List a) -> List (List a)
-makeToListOfBoxLists rowsPerBox columnsPerBox lst output =
-    case lst of
-        [] ->
-            output
-
-        nonEmptyList ->
-            let
-                ( beginning, remainder ) =
-                    ListExtra.splitAt rowsPerBox nonEmptyList
-            in
-            case beginning of
-                [] ->
-                    -- move onto remainder if empty
-                    makeToListOfBoxLists rowsPerBox columnsPerBox remainder output
-
-                rows ->
-                    let
-                        box =
-                            List.concat (List.map (\row -> List.take columnsPerBox row) rows)
-
-                        rowRemainders =
-                            let
-                                remainders =
-                                    List.map (\r -> List.drop columnsPerBox r) rows
-                            in
-                            if List.any (\r -> List.isEmpty r) remainders then
-                                []
-
-                            else
-                                remainders
-                    in
-                    makeToListOfBoxLists rowsPerBox columnsPerBox (rowRemainders ++ remainder) (output ++ [ box ])
-
-
-fromListOfBoxLists : Int -> Int -> List (List a) -> Grid a
-fromListOfBoxLists rowsPerBox columnsPerBox lst =
-    makeFromListOfBoxLists rowsPerBox columnsPerBox lst []
-
-
-makeFromListOfBoxLists : Int -> Int -> List (List a) -> List (List a) -> Grid a
-makeFromListOfBoxLists rowsPerBox columnsPerBox lst output =
-    case lst of
-        [] ->
-            fromList output
-
-        nonEmptyList ->
-            let
-                ( beginning, remainder ) =
-                    ListExtra.splitAt rowsPerBox nonEmptyList
-            in
-            -- if no values, move on to the next set of 3 lists
-            if List.any List.isEmpty beginning then
-                makeFromListOfBoxLists rowsPerBox columnsPerBox remainder output
-
-            else
-                let
-                    row =
-                        List.concat (List.map (\l -> List.take columnsPerBox l) beginning)
-
-                    adjLists =
-                        List.map (\l -> List.drop columnsPerBox l) beginning
-                in
-                makeFromListOfBoxLists rowsPerBox columnsPerBox (adjLists ++ remainder) (output ++ [ row ])

@@ -3,16 +3,12 @@ module TestSudoku exposing (initGrid)
 import Array
 import Expect exposing (Expectation)
 import Grid exposing (get)
+import PossibleList2d exposing (PossibleCell(..))
 import Set
 import SudokuGrid
     exposing
-        ( Action
-        , PossibleCell(..)
-        , PossibleGrid
-        , SudokuGrid
+        ( SudokuGrid
         , fromList
-        , initPossibleGrid
-        , possibleCellFromValue
         )
 import Test exposing (..)
 
@@ -39,18 +35,16 @@ initGrid =
                 Expect.equal (get 0 6 simpleGrid) (Just (Just 7))
         , test "cellFromValue 7" <|
             \_ ->
-                Expect.equal (possibleCellFromValue (Just 7)) (Filled 7)
+                Expect.equal (PossibleList2d.possibleCellFromValue (Just 7)) (Filled 7)
         , test "cellFromValue nothing" <|
             \_ ->
-                Expect.equal (possibleCellFromValue Nothing) (Possibles { remaining = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ], removed = [] })
+                Expect.equal (PossibleList2d.possibleCellFromValue Nothing) (Possibles { remaining = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ], removed = [] })
         , test "init Possibles" <|
             \_ ->
-                Expect.equal (initPossibleGrid (SudokuGrid.fromList [ [ Nothing, Just 1 ], [ Just 4, Nothing ] ]))
-                    (Grid.fromList
-                        [ [ Possibles { remaining = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ], removed = [] }, Filled 1 ]
-                        , [ Filled 4, Possibles { remaining = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ], removed = [] } ]
-                        ]
-                    )
+                Expect.equal (PossibleList2d.fromSudokuGrid (SudokuGrid.fromList [ [ Nothing, Just 1 ], [ Just 4, Nothing ] ]))
+                    [ [ Possibles { remaining = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ], removed = [] }, Filled 1 ]
+                    , [ Filled 4, Possibles { remaining = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ], removed = [] } ]
+                    ]
         , test "fromListOfString" <|
             \_ ->
                 let
