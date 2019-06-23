@@ -1,52 +1,61 @@
-module SolversTriplet exposing (applyBoxColumnLogic, applyBoxRowLogic, applyTripletLogic, fillPossibleTripletCell, fillWhereValueOnlyPossibleInOneCell, removePossibleWhereFilled, updatePossibleCellFromTriplet, updatePossibleCellsFromBoxRow, updatePossibleGridFromRowTriplets, updateRow)
+module SolversTriplet exposing
+    ( applyTripletLogic
+    , updatePossibleCellFromTriplet
+    , updatePossibleCellsFromTripletCell
+    , updatePossibleGridFromRowTriplets
+    , updateRow
+    )
+
+import List2d
+import ListExtra
+import PossibleList2d exposing (PossibleCell(..), PossibleList2d, Rationale(..), Removal)
+import PossibleTripletList2d exposing (PossibleTripletCell, PossibleTripletList2d)
+import Set
 
 
-applyTripletLogic : PossibleGrid -> PossibleGrid
-applyTripletLogic pg =
+applyTripletLogic : PossibleList2d -> PossibleList2d
+applyTripletLogic p2d =
     let
         ptgFromRows =
-            pg |> rowTripletsfromPossibleList2d |> applyBoxRowLogic
+            p2d
+                |> PossibleTripletList2d.rowTripletsfromPossibleList2d
+                |> applyRowTripletLogic
 
-        newPg =
-            updatePossibleGridFromRowTriplets ptgFromRows pg
+        newP2d =
+            updatePossibleGridFromRowTriplets ptgFromRows p2d
 
         ptgFromCols =
-            newPg |> columnTripletsFromPossibleList2d
+            newP2d |> PossibleTripletList2d.columnTripletsFromPossibleList2d |> applyColumnTripletLogic
     in
-    updatePossibleGridFromRowTriplets ptgFromRows pg
+    updatePossibleGridFromColumnTriplets ptgFromCols newP2d
 
 
 {-| apply any logic from triplet grid to possiblegrid
 -}
-updatePossibleGridFromRowTriplets : PossibleTripletList2d -> PossibleGrid -> PossibleGrid
-updatePossibleGridFromRowTriplets ptg pg =
-    List.map2 (\x y -> updateRow (Array.toList x) (Array.toList y) []) (Array.toList ptg) (Array.toList pg) |> Grid.fromList2d
+updatePossibleGridFromRowTriplets : PossibleTripletList2d -> PossibleList2d -> PossibleList2d
+updatePossibleGridFromRowTriplets ptL2d pl2d =
+    List.map2 (\x y -> updateRow x y) ptL2d pl2d
 
 
-updateRow : List PossibleTripletCell -> List PossibleCell -> List PossibleCell -> List PossibleCell
-updateRow ptgRow pgRow output =
-    case ptgRow of
-        [] ->
-            output
-
-        ptg :: ptgRemainder ->
-            let
-                pgs =
-                    List.take 3 pgRow
-
-                newOutput =
-                    output ++ updatePossibleCellsFromBoxRow ptg pgs
-            in
-            updateRow ptgRemainder (List.drop 3 pgRow) newOutput
+updatePossibleGridFromColumnTriplets : PossibleTripletList2d -> PossibleList2d -> PossibleList2d
+updatePossibleGridFromColumnTriplets ptL2d pl2d =
+    updatePossibleGridFromRowTriplets (List2d.transpose ptL2d) (List2d.transpose pl2d) |> List2d.transpose
 
 
-
---
-
-
-updatePossibleCellsFromBoxRow possibleTripletCell possibleCells =
+updateRow : List PossibleTripletCell -> List PossibleCell -> List PossibleCell
+updateRow ptL2dRow p2dRow =
     let
-        -- values that can remain in each cell are both filled and remaining values for the tripled
+        groupedCells =
+            ListExtra.groupsOf 3 p2dRow
+    in
+    List.map2 updatePossibleCellsFromTripletCell ptL2dRow groupedCells |> List.concat
+
+
+{-| For each possibleCell, remove values are not present in the filled or remaining values for the triplet
+-}
+updatePossibleCellsFromTripletCell : PossibleTripletCell -> List PossibleCell -> List PossibleCell
+updatePossibleCellsFromTripletCell possibleTripletCell possibleCells =
+    let
         possibleValues =
             Set.union possibleTripletCell.values possibleTripletCell.remaining
     in
@@ -56,14 +65,14 @@ updatePossibleCellsFromBoxRow possibleTripletCell possibleCells =
 updatePossibleCellFromTriplet : Set.Set Int -> PossibleCell -> PossibleCell
 updatePossibleCellFromTriplet tripletRemaining c =
     case c of
+        Filled v ->
+            Filled v
+
         Possibles p ->
             let
                 -- if cant exist in triplet, then cant exist in PossibleCell
-                invalidValues =
-                    Set.diff p.remaining tripletRemaining
-
                 newRemaining =
-                    Set.diff p.remaining invalidValues
+                    Set.intersect p.remaining tripletRemaining
             in
             if newRemaining == p.remaining then
                 Possibles p
@@ -75,47 +84,70 @@ updatePossibleCellFromTriplet tripletRemaining c =
                 in
                 Possibles { remaining = newRemaining, removed = p.removed ++ [ Removal removedValues BoxRowLogic ] }
 
-        Filled v ->
-            Filled v
 
-
-applyBoxRowLogic : PossibleTripletList2d -> PossibleTripletList2d
-applyBoxRowLogic ptg =
+{-| Input is a List2d of 9 row and 3 columns
+From this we want to extract boxes, which are 3 x 1 groups
+-}
+applyRowTripletLogic : PossibleTripletList2d -> PossibleTripletList2d
+applyRowTripletLogic ptL2d =
     let
+        boxes =
+            List2d.toListOfBoxLists 3 1 ptL2d
+
+        -- apply logic to each box
+        -- if a triplet only has 3 possible values, then they are all fills
+        -- remove filled values from other triplet possibilities in the box
+        -- fill where value is only possible in one triplet
+        -- remove filled values from other triplet possibilities in the box
         adjustedBoxes =
-            List.map fillWhereValueOnlyPossibleInOneCell (Grid.toListOfBoxLists 3 1 ptg)
+            boxes
+                |> List2d.map fillWhereOnlyThreePossibilities
+                |> List.map removePossibleWhereFilled
+                |> List.map fillWhereValueOnlyPossibleInOneCell
 
         -- reassemble into rows
         rows =
-            Grid.toListOfList (Grid.fromListOfBoxLists 3 1 adjustedBoxes)
-
-        newRows =
-            List.map removePossibleWhereFilled rows
+            List2d.fromListOfBoxLists 3 1 adjustedBoxes
     in
-    Grid.fromList2d newRows
+    -- now apply logic to each row, based on adjustments from above
+    List.map removePossibleWhereFilled rows
 
 
-applyBoxColumnLogic : PossibleTripletList2d -> PossibleTripletList2d
-applyBoxColumnLogic ptg =
-    let
-        adjustedBoxes =
-            List.map fillWhereValueOnlyPossibleInOneCell (Grid.toListOfBoxLists 1 3 ptg)
+applyColumnTripletLogic : PossibleTripletList2d -> PossibleTripletList2d
+applyColumnTripletLogic ptL2d =
+    ptL2d |> List2d.transpose |> applyRowTripletLogic |> List2d.transpose
 
-        -- reassemble into rows
-        rows =
-            Grid.toListOfList (Grid.fromListOfBoxLists 1 3 adjustedBoxes)
 
-        newRows =
-            List.map removePossibleWhereFilled rows
-    in
-    Grid.fromList2d newRows
+
+--    ptL2d
+--        |> List2d.transpose
+--        |> List2d.toListOfBoxLists 3 1
+--        |> List2d.map fillWhereOnlyThreePossibilities
+--        |> List.map removePossibleWhereFilled
+--        |> List2d.fromListOfBoxLists 3 1
+--        |> List2d.transpose
+--    let
+--        boxes =
+--            List2d.toListOfBoxLists 1 3 ptL2d
+--
+--        adjustedBoxes =
+--            List.map fillWhereValueOnlyPossibleInOneCell boxes
+--
+--        -- reassemble into rows, 3 x 9
+--        rows =
+--            List2d.fromListOfBoxLists 1 3 adjustedBoxes
+--
+--        newRows =
+--            List.map removePossibleWhereFilled rows
+--    in
+--    rows
 
 
 fillWhereValueOnlyPossibleInOneCell : List PossibleTripletCell -> List PossibleTripletCell
-fillWhereValueOnlyPossibleInOneCell boxOfptg =
+fillWhereValueOnlyPossibleInOneCell ptL2ds =
     let
         possibles =
-            List.concat (List.map (\c -> Set.toList c.remaining) boxOfptg)
+            List.concat (List.map (\c -> Set.toList c.remaining) ptL2ds)
 
         isUnique v =
             List.length (List.filter (\x -> x == v) possibles) == 1
@@ -123,13 +155,11 @@ fillWhereValueOnlyPossibleInOneCell boxOfptg =
         uniques =
             Set.fromList (List.filter isUnique possibles)
     in
-    List.map (\ptc -> fillPossibleTripletCell uniques ptc) boxOfptg
+    List.map (\ptc -> fillPossibleTripletCell uniques ptc) ptL2ds
 
 
-
--- move matching uniques to filled for the cell
-
-
+{-| move matching uniques to filled for the cell
+-}
 fillPossibleTripletCell : Set.Set Int -> PossibleTripletCell -> PossibleTripletCell
 fillPossibleTripletCell uniques ptc =
     let
@@ -146,27 +176,36 @@ fillPossibleTripletCell uniques ptc =
 
             else
                 Set.diff ptc.remaining uniques
-
-        --        remaining =
-        --            Set.diff ptc.remaining uniques
     in
     PossibleTripletCell filled remaining
 
 
-
--- generate list of cells for each box
-
-
+{-| Apply to a row or column
+-}
 removePossibleWhereFilled : List PossibleTripletCell -> List PossibleTripletCell
-removePossibleWhereFilled row =
+removePossibleWhereFilled ptcs =
     let
         -- get all filled values in the row
         filled =
-            row |> List.map (\c -> Set.toList c.values) |> List.concat |> Set.fromList
+            ptcs |> List.map (\c -> Set.toList c.values) |> List.concat |> Set.fromList
 
         removeFilled c =
             PossibleTripletCell c.values (Set.diff c.remaining filled)
 
         --        filled = Set.fromList (List.concat (List.map (\c -> Set.toList c.values) row))
     in
-    List.map removeFilled row
+    List.map removeFilled ptcs
+
+
+{-| PossibleTripletCell has 3 values. If we have 1 filled, 2 possibles, we can fill the remainder
+-}
+fillWhereOnlyThreePossibilities ptc =
+    let
+        allValues =
+            Set.union ptc.values ptc.remaining
+    in
+    if Set.size allValues == 3 then
+        PossibleTripletCell allValues Set.empty
+
+    else
+        ptc

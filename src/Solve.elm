@@ -4,6 +4,7 @@ import Action exposing (Action)
 import PossibleList2d exposing (PossibleList2d)
 import SolversDirectLogic
 import SolversReduction
+import SolversTriplet
 import SudokuGrid exposing (SudokuGrid)
 
 
@@ -28,8 +29,8 @@ solutionFromPossibleList2d actions p2d =
                     |> SolversReduction.valueOnlyPossibleInOneCellInRow
                     |> SolversReduction.valueOnlyPossibleInOneCellInColumn
                     |> SolversReduction.valueOnlyPossibleInOneCellInBox
+                    |> SolversTriplet.applyTripletLogic
 
-            --                    |> PossibleTripletList2d.applyTripletLogic
             maybeAction =
                 Action.getAction newP2d
         in

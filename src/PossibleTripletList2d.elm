@@ -33,15 +33,19 @@ rowTripletsfromPossibleList2d p2d =
 
 
 columnTripletsFromPossibleList2d : PossibleList2d -> PossibleTripletList2d
-columnTripletsFromPossibleList2d pg =
-    let
-        groups =
-            List2d.toListOfBoxLists 3 1 pg
+columnTripletsFromPossibleList2d p2d =
+    p2d |> List2d.transpose |> rowTripletsfromPossibleList2d |> List2d.transpose
 
-        triplets =
-            List.map tripletFromPossibleCells groups
-    in
-    ListExtra.groupsOf 9 triplets
+
+
+--    let
+--        groups =
+--            List2d.toListOfBoxLists 3 1 p2d
+--
+--        triplets =
+--            List.map tripletFromPossibleCells groups
+--    in
+--    ListExtra.groupsOf 9 triplets
 
 
 tripletFromPossibleCells : List PossibleCell -> PossibleTripletCell

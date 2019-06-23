@@ -47,7 +47,7 @@ type alias Model =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model key url (Puzzles.puzzleFromName "4291") puzzles False Nothing [] Nothing, Cmd.none )
+    ( Model key url (Puzzles.puzzleFromName "8290") puzzles False Nothing [] Nothing, Cmd.none )
 
 
 
