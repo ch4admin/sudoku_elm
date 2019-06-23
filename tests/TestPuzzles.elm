@@ -36,4 +36,10 @@ examples =
         , test "medium" <|
             \_ ->
                 testPuzzle (Puzzles.puzzleFromName "8290")
+        , test "hard" <|
+            \_ ->
+                testPuzzle (Puzzles.puzzleFromName "5897")
+        , test "hard2" <|
+            \_ ->
+                testPuzzle (Puzzles.puzzleFromName "6499")
         ]

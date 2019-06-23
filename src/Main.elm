@@ -47,7 +47,7 @@ type alias Model =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model key url (Puzzles.puzzleFromName "8290") puzzles False Nothing [] Nothing, Cmd.none )
+    ( Model key url (Puzzles.puzzleFromName "5897") puzzles False Nothing [] Nothing, Cmd.none )
 
 
 
@@ -305,5 +305,8 @@ rationaleText removal value =
 
                 BoxRowLogic ->
                     "BoxRowLogic"
+
+                ExhaustiveEnumerationInvalid ->
+                    "Exhaustive enumeration invalidated these values"
     in
     "Not [" ++ String.join "," (List.map String.fromInt removal.values) ++ "]: " ++ logicText

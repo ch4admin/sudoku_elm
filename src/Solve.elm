@@ -2,6 +2,7 @@ module Solve exposing (getSolution, solutionFromPossibleList2d)
 
 import Action exposing (Action)
 import PossibleList2d exposing (PossibleList2d)
+import SolveBruteForce
 import SolversDirectLogic
 import SolversReduction
 import SolversTriplet
@@ -42,7 +43,16 @@ solutionFromPossibleList2d actions p2d =
                     solutionFromPossibleList2d actions newP2d
 
                 else
-                    ( newP2d, actions )
+                    -- last ditch try brute force
+                    let
+                        bruteP2d =
+                            SolveBruteForce.bruteForceRemoveInvalid newP2d
+                    in
+                    if bruteP2d /= newP2d then
+                        solutionFromPossibleList2d actions bruteP2d
+
+                    else
+                        ( newP2d, actions )
 
             Just a ->
                 -- apply action to update grid, and recurse

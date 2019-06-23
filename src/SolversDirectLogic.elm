@@ -38,7 +38,7 @@ removeFilledValuesFromPossiblesInList : Rationale -> List PossibleCell -> List P
 removeFilledValuesFromPossiblesInList rationale list =
     let
         filledValues =
-            getFilledValues list
+            Set.fromList (PossibleList2d.getFilledValues list)
 
         processCell : PossibleCell -> PossibleCell
         processCell cell =
@@ -67,18 +67,3 @@ removeFilledValuesFromPossiblesInList rationale list =
                     Possibles { remaining = newSet, removed = removed }
     in
     List.map processCell list
-
-
-getFilledValues list =
-    Set.fromList
-        (List.filterMap
-            (\c ->
-                case c of
-                    Filled v ->
-                        Just v
-
-                    _ ->
-                        Nothing
-            )
-            list
-        )

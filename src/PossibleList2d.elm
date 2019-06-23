@@ -4,7 +4,10 @@ module PossibleList2d exposing
     , Rationale(..)
     , Removal
     , fromSudokuGrid
+    , getFilledValues
     , isSolved
+    , isValid
+    , isValidRowColOrBox
     , possibleCellFromValue
     , toSudokuGrid
     )
@@ -38,6 +41,7 @@ type Rationale
     | ValueOnlyPossibleInOneCellInColumn
     | ValueOnlyPossibleInOneCellInBox
     | BoxRowLogic
+    | ExhaustiveEnumerationInvalid
 
 
 fromSudokuGrid : SudokuGrid -> PossibleList2d
@@ -88,3 +92,61 @@ isPossibles c =
 
         _ ->
             False
+
+
+isValid p2d =
+    if List.any (\row -> not (isValidRowColOrBox row)) p2d then
+        False
+
+    else if List.any (\col -> not (isValidRowColOrBox col)) (List2d.transpose p2d) then
+        False
+
+    else if List.any (\box -> not (isValidRowColOrBox box)) (List2d.toListOfBoxLists 3 3 p2d) then
+        False
+
+    else
+        True
+
+
+isValidRowColOrBox : List PossibleCell -> Bool
+isValidRowColOrBox list =
+    let
+        filledValues =
+            getFilledValues list
+
+        filledLength =
+            List.length filledValues
+    in
+    -- duplicate fill values in a group is an error
+    if filledLength == 0 then
+        True
+
+    else if Set.size (Set.fromList filledValues) /= filledLength then
+        False
+
+    else
+        List.all (\c -> isValidCell c) list
+
+
+getFilledValues : List PossibleCell -> List Int
+getFilledValues list =
+    List.filterMap
+        (\c ->
+            case c of
+                Filled v ->
+                    Just v
+
+                _ ->
+                    Nothing
+        )
+        list
+
+
+isValidCell : PossibleCell -> Bool
+isValidCell c =
+    case c of
+        Filled _ ->
+            True
+
+        Possibles p ->
+            Set.size p.remaining > 0
