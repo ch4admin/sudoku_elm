@@ -7,10 +7,11 @@ import Debug
 import Grid
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onMouseOver)
+import Html.Events exposing (onClick, onInput, onMouseOver, onSubmit)
+import Json.Decode as Decode
 import List2d
 import PossibleList2d exposing (PossibleCell(..), PossibleList2d, Rationale(..), Removal)
-import Puzzles exposing (Puzzle, puzzles)
+import Puzzles exposing (Puzzle, difficultyText, puzzles)
 import Set
 import Solve
 import SudokuGrid exposing (SudokuGrid)
@@ -60,6 +61,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | SolvePuzzle
     | HoverCell Int Int
+    | SetPuzzle String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -100,6 +102,13 @@ update msg model =
         HoverCell x y ->
             ( { model | hoverCell = Just ( x, y ) }, Cmd.none )
 
+        SetPuzzle puzzleName ->
+            let
+                maybePuzzle =
+                    Puzzles.puzzleFromName puzzleName
+            in
+            ( { model | puzzle = maybePuzzle, solved = False }, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -130,7 +139,10 @@ view model =
             [ div [ class "ui grid" ]
                 [ div [ class "seven wide column" ] [ sudokuBoardView (gridFromPuzzle model.puzzle) model.solution model.solved model.hoverCell ]
                 , div [ class "nine wide column" ]
-                    [ button [ class solveButtonClass, onClick SolvePuzzle ] [ text "Solve" ]
+                    [ Html.form [ class "ui form" ]
+                        [ gameSelectView model.puzzles model.puzzle
+                        , button [ class solveButtonClass, Html.Events.custom "click" (Decode.succeed { message = SolvePuzzle, stopPropagation = True, preventDefault = True }) ] [ text "Solve" ]
+                        ]
                     , actionView model.actions
                     ]
                 ]
@@ -147,6 +159,54 @@ gridFromPuzzle puzzle =
 
         Just p ->
             p.puzzle
+
+
+gameSelectView : List Puzzle -> Maybe Puzzle -> Html Msg
+gameSelectView puzzles selectedPuzzle =
+    let
+        optionFromPuzzle p =
+            let
+                optionText =
+                    p.name ++ " (" ++ difficultyText p.difficulty ++ ")"
+
+                selected =
+                    if isSelected p selectedPuzzle then
+                        [ attribute "selected" "selected" ]
+
+                    else
+                        []
+            in
+            --            div [ class "item", attribute "data-value" p.name ] [ text optionText ]
+            option ([ value p.name ] ++ selected) [ text optionText ]
+
+        options =
+            Debug.log "opts" (List.map optionFromPuzzle puzzles)
+    in
+    div [ class "field" ]
+        [ label [] [ text "Puzzle" ]
+        , select [ class "ui dropdown", onInput SetPuzzle ] options
+
+        --          div [ class "ui selection dropdown" ]
+        --            [ input [ type_ "hidden", name "puzzle" ] []
+        --            , i [ class "dropdown icon" ] []
+        --            , div [ class "default text" ] [ text "Puzzle" ]
+        --            , div [ class "menu" ]
+        --                options
+        --            ]
+        ]
+
+
+isSelected puzzle maybeSelectedPuzzle =
+    case maybeSelectedPuzzle of
+        Nothing ->
+            False
+
+        Just selectedPuzzle ->
+            if puzzle.name == selectedPuzzle.name then
+                True
+
+            else
+                False
 
 
 sudokuBoardView : SudokuGrid -> Maybe PossibleList2d -> Bool -> Maybe ( Int, Int ) -> Html Msg

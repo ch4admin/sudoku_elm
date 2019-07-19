@@ -1,4 +1,4 @@
-module Puzzles exposing (Puzzle, puzzleFromName, puzzles)
+module Puzzles exposing (Puzzle, difficultyText, puzzleFromName, puzzles)
 
 import SudokuGrid exposing (SudokuGrid)
 
@@ -8,6 +8,21 @@ type Difficulty
     | Easy
     | Medium
     | Hard
+
+
+difficultyText difficulty =
+    case difficulty of
+        Simple ->
+            "Simple"
+
+        Easy ->
+            "Easy"
+
+        Medium ->
+            "Medium"
+
+        Hard ->
+            "Hard"
 
 
 type alias Puzzle =
