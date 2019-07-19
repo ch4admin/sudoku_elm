@@ -1,0 +1,15 @@
+{
+  "name": "Sudoku Solver in Elm",
+  "repository": "https://github.com/ch4admin/sudoku_elm",
+  "env": {
+    "ELM_COMPILE": "elm make src/Main.elm --output public/elm.js"
+  },
+  "buildpacks": [
+    {
+      "url": "https://github.com/srid/heroku-buildpack-elm.git"
+    },
+    {
+      "url": "https://github.com/hone/heroku-buildpack-static"
+    }
+  ]
+}
