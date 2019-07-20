@@ -34,6 +34,10 @@ main =
 -- MODEL
 
 
+sourceCodeUrl =
+    "https://github.com/ch4admin/sudoku_elm"
+
+
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
@@ -137,7 +141,14 @@ view model =
     , body =
         [ div [ class "ui container" ]
             [ div [ class "ui grid" ]
-                [ div [ class "seven wide column" ] [ sudokuBoardView (gridFromPuzzle model.puzzle) model.solution model.solved model.hoverCell ]
+                [ div [ class "seven wide column" ]
+                    [ sudokuBoardView (gridFromPuzzle model.puzzle) model.solution model.solved model.hoverCell
+                    , div [ class "row" ]
+                        [ div [] []
+                        , h1 [ class "ui header" ] [ text "Sudoku Solver" ]
+                        , div [] [ a [ href sourceCodeUrl ] [ text sourceCodeUrl ] ]
+                        ]
+                    ]
                 , div [ class "nine wide column" ]
                     [ Html.form [ class "ui form" ]
                         [ gameSelectView model.puzzles model.puzzle
