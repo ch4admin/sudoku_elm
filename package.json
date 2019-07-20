@@ -1,0 +1,22 @@
+{
+  "name": "sudoku_elm",
+  "version": "0.0.0",
+  "description": "Sudoku Solver",
+  "engines": {
+    "node": "10.x"
+  },
+  "scripts": {
+    "start": "node server",
+    "build": "npm install && elm make src/Main.elm --output public/elm.js"
+  },
+  "dependencies": {
+    "ejs": "^2.5.6",
+    "express": "^4.16.4",
+    "dotenv": "^8.0.0",
+    "elm": "0.19.0"
+  },
+  "devDependencies": {
+    "request": "^2.81.0",
+    "tape": "^4.7.0"
+  }
+}
